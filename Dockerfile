@@ -10,6 +10,8 @@ COPY data_loader.py .
 COPY trainer.py .
 COPY evaluator.py .
 COPY model_io.py .
+COPY monitoring.py .
+COPY pipeline_prefect.py .
 COPY classifier.joblib .
 COPY Churn_Modelling.csv .
 
