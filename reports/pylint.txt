@@ -1,0 +1,35 @@
+************* Module main
+main.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+main.py:9:0: C0116: Missing function or method docstring (missing-function-docstring)
+main.py:18:8: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+main.py:18:17: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+main.py:43:8: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+main.py:43:17: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+main.py:53:8: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+main.py:53:17: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+main.py:61:8: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+main.py:61:17: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+************* Module data_loader
+data_loader.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+data_loader.py:6:0: C0116: Missing function or method docstring (missing-function-docstring)
+data_loader.py:14:4: C0103: Variable name "X" doesn't conform to snake_case naming style (invalid-name)
+data_loader.py:17:4: C0103: Variable name "X_train" doesn't conform to snake_case naming style (invalid-name)
+data_loader.py:17:13: C0103: Variable name "X_test" doesn't conform to snake_case naming style (invalid-name)
+data_loader.py:22:4: C0103: Variable name "X_train_scaled" doesn't conform to snake_case naming style (invalid-name)
+data_loader.py:23:4: C0103: Variable name "X_test_scaled" doesn't conform to snake_case naming style (invalid-name)
+************* Module trainer
+trainer.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+trainer.py:4:0: C0116: Missing function or method docstring (missing-function-docstring)
+trainer.py:4:16: C0103: Argument name "X_train" doesn't conform to snake_case naming style (invalid-name)
+************* Module evaluator
+evaluator.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+evaluator.py:10:0: C0116: Missing function or method docstring (missing-function-docstring)
+evaluator.py:10:26: C0103: Argument name "X_test" doesn't conform to snake_case naming style (invalid-name)
+************* Module model_io
+model_io.py:1:0: C0114: Missing module docstring (missing-module-docstring)
+model_io.py:4:0: C0116: Missing function or method docstring (missing-function-docstring)
+model_io.py:10:0: C0116: Missing function or method docstring (missing-function-docstring)
+
+------------------------------------------------------------------
+Your code has been rated at 7.20/10 (previous run: 7.20/10, +0.00)
+

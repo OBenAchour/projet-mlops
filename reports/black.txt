@@ -1,0 +1,8 @@
+reformatted /mnt/c/Users/ousse/ML_Project/tests/test_model_io.py
+reformatted /mnt/c/Users/ousse/ML_Project/tests/test_data_loader.py
+reformatted /mnt/c/Users/ousse/ML_Project/tests/test_evaluator.py
+reformatted /mnt/c/Users/ousse/ML_Project/tests/test_trainer.py
+reformatted /mnt/c/Users/ousse/ML_Project/evaluator.py
+
+All done! ✨ 🍰 ✨
+5 files reformatted, 5 files left unchanged.
