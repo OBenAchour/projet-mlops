@@ -122,8 +122,8 @@ def start_service(svc: ServiceInput):
     commands = {
         "prefect": ["prefect", "server", "start"],
         "mlflow": ["mlflow", "server", "--backend-store-uri", "sqlite:///mlflow.db", "--default-artifact-root", "./mlartifacts", "--host", "0.0.0.0", "--port", "5000"],
-        "elasticsearch": ["docker-compose", "up", "-d", "elasticsearch"],
-        "kibana": ["docker-compose", "up", "-d", "kibana"],
+        "elasticsearch": ["/usr/bin/docker-compose", "up", "-d", "elasticsearch"],
+        "kibana": ["/usr/bin/docker-compose", "up", "-d", "kibana"],
     }
     if svc.service_name not in commands:
         raise HTTPException(status_code=400, detail=f"Service inconnu: {svc.service_name}")
@@ -139,8 +139,8 @@ def start_service(svc: ServiceInput):
 @app.post("/api/stop-service")
 def stop_service(svc: ServiceInput):
     commands = {
-        "elasticsearch": ["docker-compose", "stop", "elasticsearch"],
-        "kibana": ["docker-compose", "stop", "kibana"],
+        "elasticsearch": ["/usr/bin/docker-compose", "stop", "elasticsearch"],
+        "kibana": ["/usr/bin/docker-compose", "stop", "kibana"],
     }
     if svc.service_name not in commands:
         return {"status": "manual", "message": f"Arretez {svc.service_name} manuellement (Ctrl+C)"}
