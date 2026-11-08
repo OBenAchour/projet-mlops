@@ -1,0 +1,31 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ---- Virtual environments ----
+venv/
+.venv/
+env/
+.env
+
+# ---- MLflow run/experiment store (regenerated locally; never commit) ----
+mlartifacts/
+mlruns/
+mlflow.db
+*.skops
+
+# ---- Generated quality reports (produced by CI / quality_check.sh) ----
+reports/
+
+# ---- Editors / OS ----
+.idea/
+.vscode/
+.DS_Store
+
+# Note: classifier.joblib, confusion_matrix.png and Churn_Modelling.csv/.xlsx
+# are intentionally kept tracked so the Docker image builds and the app runs
+# out of the box. The 145 MB mlartifacts/ store is what we stop tracking.
