@@ -19,13 +19,17 @@ app = FastAPI(title="Customer Churn MLOps Dashboard", version="3.0.0")
 # Store logs in memory (last 200 lines)
 log_buffer = collections.deque(maxlen=200)
 
+
 def add_log(source, message, level="info"):
-    log_buffer.append({
-        "time": time.strftime("%H:%M:%S"),
-        "source": source,
-        "message": message,
-        "level": level,
-    })
+    log_buffer.append(
+        {
+            "time": time.strftime("%H:%M:%S"),
+            "source": source,
+            "message": message,
+            "level": level,
+        }
+    )
+
 
 try:
     model = joblib.load(MODEL_PATH)
@@ -33,6 +37,7 @@ try:
 except Exception as e:
     model = None
     add_log("system", f"Impossible de charger le modele: {e}", "error")
+
 
 class CustomerInput(BaseModel):
     CreditScore: float
@@ -44,34 +49,78 @@ class CustomerInput(BaseModel):
     HasCrCard: int
     IsActiveMember: int
     EstimatedSalary: float
+
     class Config:
-        json_schema_extra = {"example": {"CreditScore":619,"Gender":0,"Age":42,"Tenure":2,"Balance":0.0,"NumOfProducts":1,"HasCrCard":1,"IsActiveMember":1,"EstimatedSalary":101348.88}}
+        json_schema_extra = {
+            "example": {
+                "CreditScore": 619,
+                "Gender": 0,
+                "Age": 42,
+                "Tenure": 2,
+                "Balance": 0.0,
+                "NumOfProducts": 1,
+                "HasCrCard": 1,
+                "IsActiveMember": 1,
+                "EstimatedSalary": 101348.88,
+            }
+        }
+
 
 class RetrainInput(BaseModel):
     n_estimators: int = 100
     random_state: int = 42
 
+
 class FlowInput(BaseModel):
     flow_name: str = "all"
+
 
 class ServiceInput(BaseModel):
     service_name: str
 
+
 @app.get("/")
 def root():
     return {"message": "Customer Churn MLOps Dashboard", "status": "running"}
+
 
 @app.post("/predict")
 def predict(customer: CustomerInput):
     global model
     if model is None:
         raise HTTPException(status_code=503, detail="Model not loaded.")
-    features = np.array([[customer.CreditScore, customer.Gender, customer.Age, customer.Tenure, customer.Balance, customer.NumOfProducts, customer.HasCrCard, customer.IsActiveMember, customer.EstimatedSalary]])
+    features = np.array(
+        [
+            [
+                customer.CreditScore,
+                customer.Gender,
+                customer.Age,
+                customer.Tenure,
+                customer.Balance,
+                customer.NumOfProducts,
+                customer.HasCrCard,
+                customer.IsActiveMember,
+                customer.EstimatedSalary,
+            ]
+        ]
+    )
     prediction = model.predict(features)
     probability = model.predict_proba(features)
-    result = {"prediction": int(prediction[0]), "churn": bool(prediction[0]==1), "probability": {"no_churn": round(float(probability[0][0]),4), "churn": round(float(probability[0][1]),4)}}
-    add_log("predict", f"Prediction: {'CHURN' if result['churn'] else 'NO CHURN'} (churn={result['probability']['churn']})", "success")
+    result = {
+        "prediction": int(prediction[0]),
+        "churn": bool(prediction[0] == 1),
+        "probability": {
+            "no_churn": round(float(probability[0][0]), 4),
+            "churn": round(float(probability[0][1]), 4),
+        },
+    }
+    add_log(
+        "predict",
+        f"Prediction: {'CHURN' if result['churn'] else 'NO CHURN'} (churn={result['probability']['churn']})",
+        "success",
+    )
     return result
+
 
 @app.post("/retrain")
 def retrain(params: RetrainInput):
@@ -79,19 +128,32 @@ def retrain(params: RetrainInput):
     add_log("retrain", f"Reentrainement n_estimators={params.n_estimators}", "info")
     X_train, X_test, y_train, y_test = prepare_data("Churn_Modelling.csv")
     from sklearn.ensemble import RandomForestClassifier
-    model = RandomForestClassifier(n_estimators=params.n_estimators, random_state=params.random_state)
+
+    model = RandomForestClassifier(
+        n_estimators=params.n_estimators, random_state=params.random_state
+    )
     model.fit(X_train, y_train)
     accuracy = model.score(X_test, y_test)
     save_model(model, MODEL_PATH)
     add_log("retrain", f"Accuracy: {round(accuracy*100,2)}%", "success")
-    return {"message": "Modele reentrainer avec succes", "accuracy": round(accuracy*100,2), "params": {"n_estimators": params.n_estimators, "random_state": params.random_state}}
+    return {
+        "message": "Modele reentrainer avec succes",
+        "accuracy": round(accuracy * 100, 2),
+        "params": {
+            "n_estimators": params.n_estimators,
+            "random_state": params.random_state,
+        },
+    }
+
 
 def run_flow_background(flow_name):
     try:
         add_log("prefect", f"Demarrage du flow '{flow_name}'...", "info")
         result = subprocess.run(
             [sys.executable, "pipeline_prefect.py", "--flow", flow_name],
-            capture_output=True, text=True, timeout=600
+            capture_output=True,
+            text=True,
+            timeout=600,
         )
         for line in result.stdout.strip().split("\n"):
             if line.strip():
@@ -108,33 +170,65 @@ def run_flow_background(flow_name):
     except Exception as e:
         add_log("prefect", f"Erreur: {str(e)}", "error")
 
+
 @app.post("/api/run-flow")
 def run_flow(flow_input: FlowInput):
-    valid = ["all","install","code","test","prepare","train","evaluate","predict","clean"]
+    valid = [
+        "all",
+        "install",
+        "code",
+        "test",
+        "prepare",
+        "train",
+        "evaluate",
+        "predict",
+        "clean",
+    ]
     if flow_input.flow_name not in valid:
         raise HTTPException(status_code=400, detail=f"Flow inconnu. Valides: {valid}")
-    t = threading.Thread(target=run_flow_background, args=(flow_input.flow_name,), daemon=True)
+    t = threading.Thread(
+        target=run_flow_background, args=(flow_input.flow_name,), daemon=True
+    )
     t.start()
     return {"status": "started", "flow": flow_input.flow_name}
+
 
 @app.post("/api/start-service")
 def start_service(svc: ServiceInput):
     commands = {
         "prefect": ["prefect", "server", "start"],
-        "mlflow": ["mlflow", "server", "--backend-store-uri", "sqlite:///mlflow.db", "--default-artifact-root", "./mlartifacts", "--host", "0.0.0.0", "--port", "5000"],
+        "mlflow": [
+            "mlflow",
+            "server",
+            "--backend-store-uri",
+            "sqlite:///mlflow.db",
+            "--default-artifact-root",
+            "./mlartifacts",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "5000",
+        ],
         "elasticsearch": ["/usr/bin/docker-compose", "up", "-d", "elasticsearch"],
         "kibana": ["/usr/bin/docker-compose", "up", "-d", "kibana"],
     }
     if svc.service_name not in commands:
-        raise HTTPException(status_code=400, detail=f"Service inconnu: {svc.service_name}")
+        raise HTTPException(
+            status_code=400, detail=f"Service inconnu: {svc.service_name}"
+        )
     try:
         add_log("service", f"Demarrage de {svc.service_name}...", "info")
-        subprocess.Popen(commands[svc.service_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen(
+            commands[svc.service_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         add_log("service", f"{svc.service_name} demarre", "success")
         return {"status": "starting", "service": svc.service_name}
     except Exception as e:
         add_log("service", f"Erreur demarrage {svc.service_name}: {e}", "error")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/stop-service")
 def stop_service(svc: ServiceInput):
@@ -143,46 +237,74 @@ def stop_service(svc: ServiceInput):
         "kibana": ["/usr/bin/docker-compose", "stop", "kibana"],
     }
     if svc.service_name not in commands:
-        return {"status": "manual", "message": f"Arretez {svc.service_name} manuellement (Ctrl+C)"}
+        return {
+            "status": "manual",
+            "message": f"Arretez {svc.service_name} manuellement (Ctrl+C)",
+        }
     try:
         add_log("service", f"Arret de {svc.service_name}...", "info")
-        subprocess.Popen(commands[svc.service_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen(
+            commands[svc.service_name],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         add_log("service", f"{svc.service_name} arrete", "success")
         return {"status": "stopping", "service": svc.service_name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/api/services-status")
 async def services_status():
     services = {}
-    checks = [("prefect","http://127.0.0.1:4200/api/health","http://localhost:4200"),("mlflow","http://127.0.0.1:5000/","http://localhost:5000"),("elasticsearch","http://127.0.0.1:9200","http://localhost:9200"),("kibana","http://127.0.0.1:5601/api/status","http://localhost:5601")]
+    checks = [
+        ("prefect", "http://127.0.0.1:4200/api/health", "http://localhost:4200"),
+        ("mlflow", "http://127.0.0.1:5000/", "http://localhost:5000"),
+        ("elasticsearch", "http://127.0.0.1:9200", "http://localhost:9200"),
+        ("kibana", "http://127.0.0.1:5601/api/status", "http://localhost:5601"),
+    ]
     for name, url, display in checks:
         try:
             async with httpx.AsyncClient(timeout=2) as c:
                 await c.get(url)
-                services[name] = {"status":"running","url":display}
+                services[name] = {"status": "running", "url": display}
         except Exception:
-            services[name] = {"status":"stopped","url":display}
-    services["fastapi"] = {"status":"running","url":"http://localhost:8000/docs"}
+            services[name] = {"status": "stopped", "url": display}
+    services["fastapi"] = {"status": "running", "url": "http://localhost:8000/docs"}
     return services
+
 
 @app.get("/api/metrics")
 def get_metrics():
     try:
         from elasticsearch import Elasticsearch
+
         es = Elasticsearch(["http://localhost:9200"])
-        r = es.search(index="mlflow-metrics", body={"query":{"match_all":{}},"sort":[{"timestamp":"desc"}],"size":10})
-        return {"count":len(r["hits"]["hits"]), "metrics":[h["_source"] for h in r["hits"]["hits"]]}
+        r = es.search(
+            index="mlflow-metrics",
+            body={
+                "query": {"match_all": {}},
+                "sort": [{"timestamp": "desc"}],
+                "size": 10,
+            },
+        )
+        return {
+            "count": len(r["hits"]["hits"]),
+            "metrics": [h["_source"] for h in r["hits"]["hits"]],
+        }
     except Exception as e:
-        return {"count":0,"metrics":[],"error":str(e)}
+        return {"count": 0, "metrics": [], "error": str(e)}
+
 
 @app.get("/api/logs")
 def get_logs():
     return {"logs": list(log_buffer)}
 
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
     return HTMLResponse(content=DASHBOARD_HTML)
+
 
 DASHBOARD_HTML = """<!DOCTYPE html>
 <html lang="fr">
